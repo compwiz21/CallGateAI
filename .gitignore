@@ -1,0 +1,17 @@
+node_modules/
+settings.enc.json
+
+# Android
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/.idea/
+android/app/release/
+*.apk
+*.aab
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db
