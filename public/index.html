@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CallGate AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+    h1 {
+      text-align: center; font-size: 28px; margin-bottom: 4px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle { text-align: center; color: #64748b; margin-bottom: 32px; font-size: 14px; }
+
+    .panel {
+      background: #1e293b; border-radius: 12px; padding: 24px;
+      margin-bottom: 20px; border: 1px solid #334155;
+    }
+    .panel-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .panel-title { font-size: 18px; font-weight: 600; }
+    .toggle-btn {
+      background: #334155; border: none; color: #94a3b8;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    .toggle-btn:hover { background: #475569; color: #e2e8f0; }
+
+    .form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: end; }
+    .form-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    input[type="text"], input[type="password"], input[type="tel"] {
+      background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+      padding: 10px 14px; border-radius: 8px; font-size: 15px; outline: none; width: 100%;
+    }
+    input:focus { border-color: #38bdf8; }
+
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: #38bdf8; color: #0f172a; }
+    .btn-primary:hover { background: #7dd3fc; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #f87171; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-success:hover { background: #4ade80; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .call-controls { display: flex; gap: 12px; align-items: end; }
+    .phone-input { flex: 1; }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; background: #0f172a; border-radius: 8px; margin-top: 12px; font-size: 14px;
+    }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+    .status-dot.idle { background: #64748b; }
+    .status-dot.ringing { background: #eab308; animation: pulse 1s infinite; }
+    .status-dot.active { background: #22c55e; animation: pulse 1.5s infinite; }
+    .status-dot.error { background: #ef4444; }
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.disconnected { background: #ef4444; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* Device status banner */
+    .device-banner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: #0f172a; border-radius: 8px; margin-bottom: 16px;
+    }
+    .device-banner .label { font-size: 12px; color: #64748b; text-transform: uppercase; }
+    .device-banner .value { font-size: 14px; }
+
+    /* AI panel */
+    .ai-controls {
+      display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 12px;
+    }
+    .ai-status-indicator {
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+      padding: 16px; background: #0f172a; border-radius: 8px; margin-top: 8px;
+    }
+    .ai-label { font-size: 16px; font-weight: 600; }
+
+    .event-log {
+      margin-top: 12px; padding: 12px; background: #0f172a; border-radius: 8px;
+      max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #64748b;
+    }
+    .event-log .event-item { padding: 2px 0; border-bottom: 1px solid #1e293b; }
+    .hidden { display: none; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: #22c55e; color: white;
+      padding: 12px 20px; border-radius: 8px; font-weight: 600;
+      transform: translateY(100px); transition: transform 0.3s; z-index: 100;
+    }
+    .toast.show { transform: translateY(0); }
+
+    .info-text { font-size: 13px; color: #64748b; line-height: 1.6; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CallGate AI</h1>
+    <p class="subtitle">GSM + AI Voice Bridge Control Panel</p>
+
+    <!-- Device Status -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Device Status</span>
+        <button class="btn-primary btn" style="padding:6px 14px;font-size:13px" onclick="checkDevice()">Refresh</button>
+      </div>
+      <div class="device-banner">
+        <div class="status-dot" id="deviceDot"></div>
+        <div>
+          <div class="label">Device</div>
+          <div class="value" id="deviceStatus">Checking...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Settings</span>
+        <button class="toggle-btn" onclick="toggleSettings()">Show / Hide</button>
+      </div>
+      <div id="settingsForm" class="hidden">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Device URL (CallGate AI App)</label>
+            <input type="text" id="deviceUrl" placeholder="http://192.168.1.x:8084">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Device API Username</label>
+            <input type="text" id="deviceUsername" placeholder="admin" value="admin">
+          </div>
+          <div class="form-group">
+            <label>Device API Password</label>
+            <input type="password" id="devicePassword" placeholder="password">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>OpenAI API Key (pushed to device)</label>
+            <input type="password" id="openaiApiKey" placeholder="sk-...">
+          </div>
+        </div>
+        <div style="margin-top: 8px;">
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        </div>
+        <p class="info-text">
+          Settings are saved encrypted on this server AND pushed to the Android device.
+          The OpenAI key is stored on the device for direct AI communication.
+        </p>
+      </div>
+    </div>
+
+    <!-- Call Control Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Call Control</span>
+      </div>
+      <div class="call-controls">
+        <div class="phone-input">
+          <div class="form-group">
+            <label>Phone Number</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="color:#64748b;font-size:15px;white-space:nowrap">+1</span>
+              <input type="tel" id="phoneNumber" placeholder="(412) 320-9222" maxlength="14"
+                oninput="formatPhone(this)" onkeydown="handlePhoneKey(event)">
+              <button class="btn btn-secondary" style="padding:10px 12px;font-size:12px;white-space:nowrap" onclick="prefillDefault()">Default</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-success" id="callBtn" onclick="startCall()">Call</button>
+        <button class="btn btn-danger" id="endCallBtn" onclick="endCall()" disabled>End</button>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot" id="callStatusDot"></div>
+        <span id="callStatusText">Idle</span>
+      </div>
+    </div>
+
+    <!-- AI Control Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">AI Voice Control</span>
+      </div>
+      <p class="info-text" style="margin-top:0;margin-bottom:12px">
+        AI auto-starts when a call connects. Use these controls to manually start/stop.
+      </p>
+      <div class="ai-status-indicator">
+        <div class="status-dot" id="aiDot"></div>
+        <span class="ai-label" id="aiStatusText">AI: Standby</span>
+      </div>
+      <div class="ai-controls">
+        <button class="btn btn-success" id="startAiBtn" onclick="startAI()">Start AI</button>
+        <button class="btn btn-danger" id="stopAiBtn" onclick="stopAI()">Stop AI</button>
+      </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Event Log</span>
+        <button class="toggle-btn" onclick="document.getElementById('eventLog').innerHTML=''">Clear</button>
+      </div>
+      <div class="event-log" id="eventLog"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Saved!</div>
+
+  <script>
+    // --- WebSocket for real-time events ---
+    const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    let ws;
+    function connectWs() {
+      ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'callgate_event') handleCallEvent(msg.data);
+      };
+      ws.onclose = () => setTimeout(connectWs, 3000);
+    }
+    connectWs();
+
+    // --- Phone Number Mask ---
+    function formatPhone(input) {
+      let digits = input.value.replace(/\D/g, '');
+      if (digits.length > 10) digits = digits.slice(0, 10);
+      let formatted = '';
+      if (digits.length > 0) formatted += '(' + digits.slice(0, 3);
+      if (digits.length >= 3) formatted += ') ';
+      if (digits.length > 3) formatted += digits.slice(3, 6);
+      if (digits.length >= 6) formatted += '-';
+      if (digits.length > 6) formatted += digits.slice(6, 10);
+      input.value = formatted;
+    }
+
+    function handlePhoneKey(e) {
+      const input = e.target;
+      if (e.key === 'Backspace' && (input.value.endsWith(') ') || input.value.endsWith('-'))) {
+        e.preventDefault();
+        input.value = input.value.slice(0, -1);
+        formatPhone(input);
+      }
+    }
+
+    function prefillDefault() {
+      const input = document.getElementById('phoneNumber');
+      input.value = '4123209222';
+      formatPhone(input);
+    }
+
+    function getCleanNumber() {
+      const digits = document.getElementById('phoneNumber').value.replace(/\D/g, '');
+      return digits ? '+1' + digits : '';
+    }
+
+    // --- Settings ---
+    function toggleSettings() {
+      document.getElementById('settingsForm').classList.toggle('hidden');
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        document.getElementById('deviceUrl').value = data.deviceUrl || '';
+        document.getElementById('deviceUsername').value = data.deviceUsername || 'admin';
+        document.getElementById('devicePassword').placeholder =
+          data.hasDevicePassword ? '(saved) enter to change' : 'password';
+        document.getElementById('openaiApiKey').placeholder =
+          data.hasOpenaiApiKey ? '(saved) enter to change' : 'sk-...';
+      } catch (e) {
+        console.error('Failed to load settings:', e);
+      }
+    }
+
+    async function saveSettings() {
+      const body = {};
+      const url = document.getElementById('deviceUrl').value.trim();
+      const user = document.getElementById('deviceUsername').value.trim();
+      const pass = document.getElementById('devicePassword').value;
+      const key = document.getElementById('openaiApiKey').value;
+
+      if (url) body.deviceUrl = url;
+      if (user) body.deviceUsername = user;
+      if (pass) body.devicePassword = pass;
+      if (key) body.openaiApiKey = key;
+
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      document.getElementById('devicePassword').value = '';
+      document.getElementById('openaiApiKey').value = '';
+      loadSettings();
+      showToast('Settings saved!');
+      checkDevice();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // --- Device Status ---
+    async function checkDevice() {
+      const dot = document.getElementById('deviceDot');
+      const text = document.getElementById('deviceStatus');
+      try {
+        const res = await fetch('/api/device/status');
+        const data = await res.json();
+        if (data.error) {
+          dot.className = 'status-dot disconnected';
+          text.textContent = 'Unreachable: ' + data.error;
+        } else {
+          dot.className = 'status-dot connected';
+          text.textContent = `${data.app || 'CallGateAI'} v${data.version || '?'} — Call: ${data.callState || 'IDLE'}`;
+          if (data.callState === 'ACTIVE') {
+            setCallStatus('active', 'Active call (from device)');
+          }
+        }
+      } catch (e) {
+        dot.className = 'status-dot disconnected';
+        text.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    // --- Call Control ---
+    async function startCall() {
+      const phoneNumber = getCleanNumber();
+      if (!phoneNumber || phoneNumber.length < 12) return showToast('Enter a valid 10-digit number');
+
+      setCallStatus('ringing', 'Dialing ' + phoneNumber + '...');
+      document.getElementById('callBtn').disabled = true;
+      document.getElementById('endCallBtn').disabled = false;
+
+      try {
+        const res = await fetch('/api/call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setCallStatus('error', 'Failed: ' + (data.error || data.message));
+          document.getElementById('callBtn').disabled = false;
+          document.getElementById('endCallBtn').disabled = true;
+        } else {
+          logEvent('Call initiated to ' + phoneNumber);
+        }
+      } catch (e) {
+        setCallStatus('error', 'Error: ' + e.message);
+        document.getElementById('callBtn').disabled = false;
+        document.getElementById('endCallBtn').disabled = true;
+      }
+    }
+
+    async function endCall() {
+      try {
+        await fetch('/api/call', { method: 'DELETE' });
+        setCallStatus('idle', 'Call ended');
+        logEvent('Call ended by user');
+      } catch (e) {
+        logEvent('Error ending call: ' + e.message);
+      }
+      document.getElementById('callBtn').disabled = false;
+      document.getElementById('endCallBtn').disabled = true;
+    }
+
+    function handleCallEvent(data) {
+      const event = data.event;
+      const phone = data.payload?.phoneNumber || '';
+      logEvent(`${event} ${phone}`);
+
+      if (event === 'call:ringing') {
+        setCallStatus('ringing', 'Ringing: ' + phone);
+      } else if (event === 'call:started') {
+        setCallStatus('active', 'Active call: ' + phone);
+        setAiStatus('active', 'AI: Active (auto-started)');
+      } else if (event === 'call:ended') {
+        setCallStatus('idle', 'Call ended');
+        setAiStatus('idle', 'AI: Standby');
+        document.getElementById('callBtn').disabled = false;
+        document.getElementById('endCallBtn').disabled = true;
+      }
+    }
+
+    function setCallStatus(state, text) {
+      document.getElementById('callStatusDot').className = 'status-dot ' + state;
+      document.getElementById('callStatusText').textContent = text;
+    }
+
+    // --- AI Control ---
+    async function startAI() {
+      try {
+        const res = await fetch('/api/ai/start', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          setAiStatus('active', 'AI: Active');
+          logEvent('AI started');
+        } else {
+          logEvent('AI start failed: ' + (data.error || data.message));
+        }
+      } catch (e) {
+        logEvent('AI start error: ' + e.message);
+      }
+    }
+
+    async function stopAI() {
+      try {
+        await fetch('/api/ai/stop', { method: 'POST' });
+        setAiStatus('idle', 'AI: Stopped');
+        logEvent('AI stopped');
+      } catch (e) {
+        logEvent('AI stop error: ' + e.message);
+      }
+    }
+
+    function setAiStatus(state, text) {
+      document.getElementById('aiDot').className = 'status-dot ' + (state === 'active' ? 'connected' : 'idle');
+      document.getElementById('aiStatusText').textContent = text;
+    }
+
+    // --- Log ---
+    function logEvent(msg) {
+      const log = document.getElementById('eventLog');
+      const time = new Date().toLocaleTimeString();
+      log.innerHTML += `<div class="event-item">[${time}] ${msg}</div>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // --- Init ---
+    loadSettings();
+    checkDevice();
+    // Poll device status every 10s
+    setInterval(checkDevice, 10000);
+  </script>
+</body>
+</html>
