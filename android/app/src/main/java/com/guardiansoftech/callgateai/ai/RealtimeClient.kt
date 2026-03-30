@@ -56,13 +56,13 @@ class RealtimeClient {
                             put("audio")
                             put("text")
                         })
-                        put("instructions", systemInstructions + "\nIMPORTANT: Always speak in English.")
+                        put("instructions", systemInstructions)
                         put("voice", "alloy")
-                        put("language", "en")
                         put("input_audio_format", "pcm16")
                         put("output_audio_format", "pcm16")
                         put("input_audio_transcription", JSONObject().apply {
                             put("model", "whisper-1")
+                            put("language", "en")
                         })
                         put("turn_detection", JSONObject().apply {
                             put("type", "server_vad")
@@ -209,8 +209,7 @@ class RealtimeClient {
 }
 
 private const val DEFAULT_INSTRUCTIONS = """
-You are a friendly AI assistant on a phone call. You MUST speak in English only.
-Greet the caller warmly when the call starts. Keep your responses brief and natural,
-as if you're having a real phone conversation. Don't use markdown or special formatting.
-Always respond in English regardless of what language you hear.
+You are a friendly AI phone assistant. You MUST ONLY speak English. Never switch languages.
+Even if you hear unclear audio, static, or what sounds like another language, ALWAYS respond in English.
+Keep responses short and conversational. Greet callers warmly. No markdown or formatting.
 """

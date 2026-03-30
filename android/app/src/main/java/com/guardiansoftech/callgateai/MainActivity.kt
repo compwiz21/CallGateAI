@@ -1,14 +1,17 @@
 package com.guardiansoftech.callgateai
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.telecom.TelecomManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -29,10 +32,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var ipText: TextView
     private lateinit var callStateText: TextView
+    private lateinit var dialerStatusText: TextView
     private lateinit var toggleServerBtn: Button
+    private lateinit var setDialerBtn: Button
     private lateinit var openAiKeyInput: EditText
     private lateinit var apiPasswordInput: EditText
     private lateinit var saveSettingsBtn: Button
+
+    private val requestDialerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            updateDialerStatus()
+            if (result.resultCode == RESULT_OK) {
+                Toast.makeText(this, "CallGate AI is now the default dialer", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +56,9 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         ipText = findViewById(R.id.ipText)
         callStateText = findViewById(R.id.callStateText)
+        dialerStatusText = findViewById(R.id.dialerStatusText)
         toggleServerBtn = findViewById(R.id.toggleServerBtn)
+        setDialerBtn = findViewById(R.id.setDialerBtn)
         openAiKeyInput = findViewById(R.id.openAiKeyInput)
         apiPasswordInput = findViewById(R.id.apiPasswordInput)
         saveSettingsBtn = findViewById(R.id.saveSettingsBtn)
@@ -52,20 +67,21 @@ class MainActivity : AppCompatActivity() {
             if (serverRunning) stopServer() else startServer()
         }
 
+        setDialerBtn.setOnClickListener {
+            requestDefaultDialer()
+        }
+
         saveSettingsBtn.setOnClickListener {
             val key = openAiKeyInput.text.toString().trim()
             val pass = apiPasswordInput.text.toString().trim()
-
             if (key.isNotEmpty()) settingsManager.setOpenAiKey(key)
             if (pass.isNotEmpty()) settingsManager.setApiPassword(pass)
-
             openAiKeyInput.setText("")
             apiPasswordInput.setText("")
             updateSettingsHints()
             Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show()
         }
 
-        // Listen for call state changes
         CallManager.addListener(object : CallManager.CallStateListener {
             override fun onCallStateChanged(state: CallManager.CallState, phoneNumber: String?) {
                 runOnUiThread {
@@ -73,7 +89,7 @@ class MainActivity : AppCompatActivity() {
                         CallManager.CallState.IDLE -> "No active call"
                         CallManager.CallState.DIALING -> "Dialing: $phoneNumber"
                         CallManager.CallState.RINGING -> "Ringing: $phoneNumber"
-                        CallManager.CallState.ACTIVE -> "Active: $phoneNumber [AI auto-start]"
+                        CallManager.CallState.ACTIVE -> "Active: $phoneNumber [AI]"
                         CallManager.CallState.DISCONNECTED -> "Call ended"
                     }
                 }
@@ -82,11 +98,61 @@ class MainActivity : AppCompatActivity() {
 
         updateSettingsHints()
         updateIpAddress()
+        updateDialerStatus()
         requestPermissions()
 
         // Auto-start server if OpenAI key is already configured
         if (settingsManager.getOpenAiKey() != null && !serverRunning) {
             startServer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateDialerStatus()
+    }
+
+    private fun isDefaultDialer(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            roleManager.isRoleHeld(RoleManager.ROLE_DIALER)
+        } else {
+            val telecomManager = getSystemService(TELECOM_SERVICE) as TelecomManager
+            telecomManager.defaultDialerPackage == packageName
+        }
+    }
+
+    private fun requestDefaultDialer() {
+        if (isDefaultDialer()) {
+            Toast.makeText(this, "Already the default dialer", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER)
+                requestDialerLauncher.launch(intent)
+            }
+        } else {
+            val intent = Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun updateDialerStatus() {
+        if (isDefaultDialer()) {
+            dialerStatusText.text = "Default Dialer: YES"
+            dialerStatusText.setTextColor(0xFF4CAF50.toInt())
+            setDialerBtn.text = "Default Dialer Set"
+            setDialerBtn.isEnabled = false
+        } else {
+            dialerStatusText.text = "Default Dialer: NO (required for speaker control)"
+            dialerStatusText.setTextColor(0xFFF44336.toInt())
+            setDialerBtn.text = "Set as Default Dialer"
+            setDialerBtn.isEnabled = true
         }
     }
 
@@ -120,9 +186,7 @@ class MainActivity : AppCompatActivity() {
             val denied = permissions.zip(grantResults.toTypedArray())
                 .filter { it.second != PackageManager.PERMISSION_GRANTED }
             if (denied.isNotEmpty()) {
-                Toast.makeText(this,
-                    "Some permissions denied. App may not work correctly.",
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Some permissions denied.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -159,11 +223,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateIpAddress() {
         val ip = getDeviceIp()
-        ipText.text = if (ip != null) {
-            "http://$ip:${ServerService.PORT}"
-        } else {
-            "Connect to WiFi to get IP"
-        }
+        ipText.text = if (ip != null) "http://$ip:${ServerService.PORT}" else "Connect to WiFi"
     }
 
     private fun getDeviceIp(): String? {
@@ -174,9 +234,7 @@ class MainActivity : AppCompatActivity() {
                 val addresses = iface.inetAddresses
                 while (addresses.hasMoreElements()) {
                     val addr = addresses.nextElement()
-                    if (!addr.isLoopbackAddress && addr is Inet4Address) {
-                        return addr.hostAddress
-                    }
+                    if (!addr.isLoopbackAddress && addr is Inet4Address) return addr.hostAddress
                 }
             }
         } catch (e: Exception) { }

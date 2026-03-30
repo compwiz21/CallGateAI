@@ -96,11 +96,11 @@ class ServerService : Service() {
 
         val apiKey = settingsManager.getOpenAiKey()
         if (apiKey == null) {
-            Log.e(TAG, "Cannot start AI — no OpenAI API key configured")
+            CallManager.debugLog.add("AI: No OpenAI key!")
             return
         }
 
-        Log.d(TAG, "Starting AI voice bridge")
+        CallManager.debugLog.add("[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())}] AI: Starting bridge, key=${apiKey.take(8)}...")
 
         // Create audio bridge
         audioBridge = AudioBridge(this).apply {
@@ -121,13 +121,13 @@ class ServerService : Service() {
                 Log.d(TAG, "[$role] $text")
             }
             onStateChanged = { state ->
-                Log.d(TAG, "AI state: $state")
+                CallManager.debugLog.add("[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())}] AI: state=$state")
                 if (state == "connected") {
                     // Start audio capture/playback
                     audioBridge?.start()
-                    // Trigger AI to greet the caller in English
+                    // Trigger AI to greet the caller
                     realtimeClient?.triggerResponse(
-                        "Greet the caller warmly in English. Say hello and ask how you can help them today."
+                        "Say in English: Hello! Thanks for calling. How can I help you today?"
                     )
                 }
             }
