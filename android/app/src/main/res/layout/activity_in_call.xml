@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#0F172A"
+    android:padding="32dp">
+
+    <TextView
+        android:id="@+id/inCallStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CONNECTING"
+        android:textSize="16sp"
+        android:textColor="#38BDF8"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/inCallCaller"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Unknown"
+        android:textSize="28sp"
+        android:textColor="#E2E8F0"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CallGate AI"
+        android:textSize="14sp"
+        android:textColor="#64748B"
+        android:layout_marginBottom="48dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <Button
+            android:id="@+id/btnAnswer"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Answer"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#22C55E" />
+
+        <Button
+            android:id="@+id/btnReject"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Decline"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#EF4444" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSpeaker"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Speaker ON"
+        android:textColor="#0F172A"
+        android:backgroundTint="#38BDF8"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnEndCall"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="End Call"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#EF4444" />
+
+</LinearLayout>

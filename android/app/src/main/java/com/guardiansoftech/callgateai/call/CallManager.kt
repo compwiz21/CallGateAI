@@ -54,6 +54,14 @@ object CallManager {
     }
 
     /**
+     * Called by InCallService when it detects call state changes.
+     * This is more reliable than TelephonyCallback.
+     */
+    fun notifyFromInCall(state: CallState) {
+        notifyStateChanged(state, currentNumber)
+    }
+
+    /**
      * Register for telephony state changes to detect when calls connect/disconnect.
      */
     fun registerCallStateListener(context: Context) {

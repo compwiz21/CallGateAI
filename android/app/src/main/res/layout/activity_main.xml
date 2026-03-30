@@ -50,7 +50,7 @@
                 android:id="@+id/ipText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Connect to WiFi to get IP"
+                android:text="Connect to WiFi"
                 android:textSize="14sp"
                 android:textColor="#94A3B8"
                 android:textIsSelectable="true"
@@ -63,7 +63,26 @@
                 android:text="No active call"
                 android:textSize="14sp"
                 android:textColor="#94A3B8"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/dialerStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Default Dialer: checking..."
+                android:textSize="14sp"
+                android:textColor="#94A3B8"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/setDialerBtn"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Set as Default Dialer"
+                android:textSize="14sp"
+                android:textColor="#0F172A"
+                android:backgroundTint="#818CF8"
+                android:layout_marginBottom="12dp" />
 
             <Button
                 android:id="@+id/toggleServerBtn"
@@ -147,32 +166,6 @@
                 android:textSize="15sp"
                 android:textColor="#0F172A"
                 android:backgroundTint="#38BDF8" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_bg"
-            android:padding="20dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="How it works"
-                android:textSize="18sp"
-                android:textColor="#E2E8F0"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1. Start the server\n2. Configure OpenAI key and API password\n3. Use the web UI or API to place a call\n4. AI automatically answers and talks to the caller"
-                android:textSize="13sp"
-                android:textColor="#94A3B8"
-                android:lineSpacingMultiplier="1.4" />
 
         </LinearLayout>
 
